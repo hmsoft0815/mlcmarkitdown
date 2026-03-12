@@ -2,6 +2,14 @@
 
 A robust, high-performance MCP server for converting various document formats to Markdown, featuring smart artifact integration and real-time progress reporting.
 
+## MLC MarkItDown Server
+
+A Go-based server wrapper for Microsoft's `markitdown` library.
+
+## Setup
+
+For detailed instructions on how to set up the Python environment (with or without Docker), please refer to the **[Setup Guide (SETUP.md)](SETUP.md)**.
+
 ## Features
 
 - **Document Conversion**: Uses Microsoft's `markitdown` library to convert PDF, Word, Excel, PowerPoint, HTML, CSV, Images, and Audio.
