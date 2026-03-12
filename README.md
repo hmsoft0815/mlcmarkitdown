@@ -10,6 +10,26 @@ A Go-based server wrapper for Microsoft's `markitdown` library.
 
 For detailed instructions on how to set up the Python environment (with or without Docker), please refer to the **[Setup Guide (SETUP.md)](SETUP.md)**.
 
+## Architecture
+
+The following diagram illustrates how the MLC MarkItDown server integrates with the Python environment and the optional Artifact Server.
+
+```mermaid
+graph TD
+    Client["MCP Client / Proxy"] -- "1. Convert Request" --> GOS["mlc-markitdown (Go Server)"]
+    GOS -- "2. Execute" --> SHIM["Python Shim"]
+    SHIM -- "3. Convert" --> MID["MarkItDown Library"]
+    MID -- "4. Markdown Content" --> SHIM
+    SHIM -- "5. Return Result" --> GOS
+    
+    subgraph Integration ["Secondary Integration"]
+        GOS -- "6. Create Artifact (gRPC)" --> ART["mlcartifact Server"]
+        ART -- "7. Artifact Metadata" --> GOS
+    end
+    
+    GOS -- "8. Final Response + URI" --> Client
+```
+
 ## Features
 
 - **Document Conversion**: Uses Microsoft's `markitdown` library to convert PDF, Word, Excel, PowerPoint, HTML, CSV, Images, and Audio.
