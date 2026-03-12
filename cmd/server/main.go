@@ -14,13 +14,20 @@ import (
 )
 
 const (
-	name    = "mlc-markitdown"
-	version = "1.0.0"
+	name = "mlc-markitdown"
 )
+
+var version = "v0.1.0" // Default version, can be overridden by ldflags
 
 func main() {
 	threshold := flag.Int("threshold", 10000, "Character threshold for auto-artifact storage")
+	showVersion := flag.Bool("version", false, "Show version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("%s version %s\n", name, version)
+		os.Exit(0)
+	}
 
 	// 1. Initialize Artifact Client
 	artifactCli, err := mlcartifact.NewClient()
