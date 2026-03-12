@@ -1,0 +1,19 @@
+# Binaries
+bin/
+build/
+*.exe
+*.bin
+*.test
+mlc-markitdown
+
+# Logs
+*.log
+
+# Dependencies
+vendor/
+
+# OS/IDEs
+.DS_Store
+.vscode/
+.idea/
+.cache/
