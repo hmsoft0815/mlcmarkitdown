@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the MLC MarkItDown server
+    cmds:
+      - go build -o bin/mlc-markitdown ./cmd/server/main.go
+
+  run:
+    desc: Run the MLC MarkItDown server
+    cmds:
+      - go run ./cmd/server/main.go
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  docker-build:
+    desc: Build Docker image
+    cmds:
+      - docker build -t mlc-markitdown .
+
+  clean:
+    desc: Remove built binaries
+    cmds:
+      - rm -rf bin/
