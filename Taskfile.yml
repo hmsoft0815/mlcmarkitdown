@@ -16,6 +16,21 @@ tasks:
     cmds:
       - go test ./...
 
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+
   docker-build:
     desc: Build Docker image
     cmds:
