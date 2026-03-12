@@ -10,6 +10,21 @@ A Go-based server wrapper for Microsoft's `markitdown` library.
 
 For detailed instructions on how to set up the Python environment (with or without Docker), please refer to the **[Setup Guide (SETUP.md)](SETUP.md)**.
 
+### Quick Start with Docker
+
+The easiest way to run the server is using Docker, as it includes all system dependencies and the correct Python environment:
+
+```bash
+# Build the image
+docker build -t mlc-markitdown .
+
+# Run the container
+docker run -d \
+  -p 9591:9591 \
+  -e ARTIFACT_GRPC_ADDR=host.docker.internal:9590 \
+  mlc-markitdown
+```
+
 ## Architecture
 
 The following diagram illustrates how the MLC MarkItDown server integrates with the Python environment and the optional Artifact Server.
