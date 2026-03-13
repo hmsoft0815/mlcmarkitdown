@@ -23,17 +23,36 @@ type ConvertUseCase struct {
 	defaultLlmAuthKey string
 }
 
-func NewConvertUseCase(artifactCli *client.Client, threshold int) *ConvertUseCase {
+type LlmConfig struct {
+	Provider string
+	URL      string
+	Model    string
+	AuthKey  string
+}
+
+func NewConvertUseCase(artifactCli *client.Client, threshold int, llmCfg LlmConfig) *ConvertUseCase {
 	pythonCmd := os.Getenv("PYTHON_CMD")
 	if pythonCmd == "" {
 		pythonCmd = "python3"
 	}
-	provider := os.Getenv("DEFAULT_LLM_PROVIDER")
+
+	provider := llmCfg.Provider
+	if provider == "" {
+		provider = os.Getenv("DEFAULT_LLM_PROVIDER")
+	}
 	if provider == "" {
 		provider = "openai"
 	}
-	llmUrl := os.Getenv("DEFAULT_LLM_URL")
-	llmModel := os.Getenv("DEFAULT_LLM_MODEL")
+
+	llmUrl := llmCfg.URL
+	if llmUrl == "" {
+		llmUrl = os.Getenv("DEFAULT_LLM_URL")
+	}
+
+	llmModel := llmCfg.Model
+	if llmModel == "" {
+		llmModel = os.Getenv("DEFAULT_LLM_MODEL")
+	}
 	if llmModel == "" {
 		if provider == "openai" {
 			llmModel = "gpt-4o"
@@ -41,7 +60,11 @@ func NewConvertUseCase(artifactCli *client.Client, threshold int) *ConvertUseCas
 			llmModel = "llama3.2-vision"
 		}
 	}
-	llmAuthKey := os.Getenv("DEFAULT_LLM_AUTH_KEY")
+
+	llmAuthKey := llmCfg.AuthKey
+	if llmAuthKey == "" {
+		llmAuthKey = os.Getenv("DEFAULT_LLM_AUTH_KEY")
+	}
 	if llmAuthKey == "" && provider == "openai" {
 		llmAuthKey = os.Getenv("OPENAI_API_KEY")
 	}

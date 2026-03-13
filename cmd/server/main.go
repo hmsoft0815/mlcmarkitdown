@@ -22,6 +22,10 @@ var version = "v0.1.0" // Default version, can be overridden by ldflags
 func main() {
 	threshold := flag.Int("threshold", 10000, "Character threshold for auto-artifact storage")
 	showVersion := flag.Bool("version", false, "Show version and exit")
+	llmProvider := flag.String("llm-provider", "", "Default LLM provider (openai, ollama)")
+	llmUrl := flag.String("llm-url", "", "Default LLM API URL")
+	llmModel := flag.String("llm-model", "", "Default LLM model name")
+	llmKey := flag.String("llm-key", "", "Default LLM API key")
 	flag.Parse()
 
 	if *showVersion {
@@ -37,7 +41,12 @@ func main() {
 	defer artifactCli.Close()
 
 	// 2. Initialize UseCase
-	convertUC := usecase.NewConvertUseCase(artifactCli, *threshold)
+	convertUC := usecase.NewConvertUseCase(artifactCli, *threshold, usecase.LlmConfig{
+		Provider: *llmProvider,
+		URL:      *llmUrl,
+		Model:    *llmModel,
+		AuthKey:  *llmKey,
+	})
 
 	// 3. Initialize MCP Server
 	mcpServer := server.NewMCPServer(name, version)
