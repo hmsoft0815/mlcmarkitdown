@@ -47,10 +47,12 @@ func main() {
 	convertArtifactHandler := handler.NewConvertArtifactHandler(convertUC, artifactCli, mcpServer)
 	quickInspectHandler := handler.NewQuickInspectHandler()
 	promptHandler := handler.NewPromptHandler()
+	llmUtilsHandler := handler.NewLlmUtilsHandler(convertUC)
 
 	mcpServer.AddTool(convertHandler.GetTool(), convertHandler.Handle)
 	mcpServer.AddTool(convertArtifactHandler.GetTool(), convertArtifactHandler.Handle)
 	mcpServer.AddTool(quickInspectHandler.GetTool(), quickInspectHandler.Handle)
+	mcpServer.AddTool(llmUtilsHandler.GetTool(), llmUtilsHandler.Handle)
 	mcpServer.AddPrompt(promptHandler.GetPrompt(), promptHandler.Handle)
 
 	// 5. Start Server

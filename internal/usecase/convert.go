@@ -14,9 +14,13 @@ import (
 type ProgressFunc func(int, string)
 
 type ConvertUseCase struct {
-	artifactCli *client.Client
-	threshold   int
-	pythonCmd   string
+	artifactCli       *client.Client
+	threshold         int
+	pythonCmd         string
+	defaultProvider   string
+	defaultLlmUrl     string
+	defaultLlmModel   string
+	defaultLlmAuthKey string
 }
 
 func NewConvertUseCase(artifactCli *client.Client, threshold int) *ConvertUseCase {
@@ -24,11 +28,37 @@ func NewConvertUseCase(artifactCli *client.Client, threshold int) *ConvertUseCas
 	if pythonCmd == "" {
 		pythonCmd = "python3"
 	}
-	return &ConvertUseCase{
-		artifactCli: artifactCli,
-		threshold:   threshold,
-		pythonCmd:   pythonCmd,
+	provider := os.Getenv("DEFAULT_LLM_PROVIDER")
+	if provider == "" {
+		provider = "openai"
 	}
+	llmUrl := os.Getenv("DEFAULT_LLM_URL")
+	llmModel := os.Getenv("DEFAULT_LLM_MODEL")
+	if llmModel == "" {
+		if provider == "openai" {
+			llmModel = "gpt-4o"
+		} else {
+			llmModel = "llama3.2-vision"
+		}
+	}
+	llmAuthKey := os.Getenv("DEFAULT_LLM_AUTH_KEY")
+	if llmAuthKey == "" && provider == "openai" {
+		llmAuthKey = os.Getenv("OPENAI_API_KEY")
+	}
+
+	return &ConvertUseCase{
+		artifactCli:       artifactCli,
+		threshold:         threshold,
+		pythonCmd:         pythonCmd,
+		defaultProvider:   provider,
+		defaultLlmUrl:     llmUrl,
+		defaultLlmModel:   llmModel,
+		defaultLlmAuthKey: llmAuthKey,
+	}
+}
+
+func (uc *ConvertUseCase) GetLlmDefaults() (string, string, string, string) {
+	return uc.defaultProvider, uc.defaultLlmModel, uc.defaultLlmUrl, uc.defaultLlmAuthKey
 }
 
 func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, progress ProgressFunc, llmModel string, openaiKey string, llmBaseUrl string) (string, *pb.WriteResponse, error) {

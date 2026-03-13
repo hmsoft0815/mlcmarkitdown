@@ -103,6 +103,12 @@ Quickly retrieves metadata about a document without performing full conversion.
 - **Arguments**:
   - `uri` (string, required): Path to file.
 
+### `markitdown__list_models__mlc`
+Lists available models from an OpenAI-compatible LLM provider.
+- **Arguments**:
+  - `base_url` (string, optional): Custom base URL (e.g., Ollama).
+  - `api_key` (string, optional): API key if required.
+
 ## Response Strategy
 
 ### 1. Human-Readable Notice
@@ -134,10 +140,16 @@ A specialized instruction prompt for the LLM. It can be retrieved to provide sys
 
 ## Configuration
 
-The server requires access to a Python environment with the `markitdown` package installed:
-```bash
-pip install markitdown
-```
+The server can be configured via environment variables. See **[SETUP.md](SETUP.md)** for details.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DEFAULT_LLM_PROVIDER` | 'openai' or 'ollama' | `openai` |
+| `DEFAULT_LLM_URL` | Base URL for LLM API | - |
+| `DEFAULT_LLM_MODEL` | Default model for vision/audio | `gpt-4o` or `llama3.2-vision` |
+| `DEFAULT_LLM_AUTH_KEY` | Default API key | - |
+| `PYTHON_CMD` | Python command | `python3` |
+| `ARTIFACT_GRPC_ADDR` | Artifact server address | `localhost:9590` |
 
 ## Transport Support
 Supports `stdio`, `sse`, and `streamable` HTTP transport modes.

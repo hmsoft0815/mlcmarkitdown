@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -34,9 +33,12 @@ func (h *ConvertArtifactHandler) GetTool() mcp.Tool {
 		mcp.WithString("artifactId", mcp.Description("The ID of the source artifact to convert"), mcp.Required()),
 		mcp.WithString("output_filename", mcp.Description("Optional name for the resulting Markdown artifact.")),
 		mcp.WithBoolean("enable_vision", mcp.Description("If true, use an LLM for vision/audio descriptions.")),
-		mcp.WithString("llm_provider", mcp.Description("LLM provider to use: 'openai' (default) or 'ollama'")),
-		mcp.WithString("ollama_model", mcp.Description("The model to use with Ollama (e.g. 'llama3.2-vision')")),
-		mcp.WithString("ollama_url", mcp.Description("The URL of the Ollama server (default: 'http://localhost:11434/v1')")),
+		mcp.WithString("llm_provider", mcp.Description("LLM provider to use: 'openai' or 'ollama'")),
+		mcp.WithString("openai_key", mcp.Description("OpenAI API Key (if provider is openai)")),
+		mcp.WithString("openai_model", mcp.Description("OpenAI model to use (default: gpt-4o)")),
+		mcp.WithString("openai_url", mcp.Description("Custom OpenAI compatible URL")),
+		mcp.WithString("ollama_model", mcp.Description("The model to use with Ollama")),
+		mcp.WithString("ollama_url", mcp.Description("The URL of the Ollama server")),
 		mcp.WithOutputSchema[ConvertResponse](),
 	)
 }
@@ -49,21 +51,31 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 
 	outputFilename := mcp.ParseString(request, "output_filename", "")
 	enableVision := mcp.ParseBoolean(request, "enable_vision", false)
-	llmProvider := mcp.ParseString(request, "llm_provider", "openai")
 	progressToken := request.Params.Meta.ProgressToken
 
 	var llmModel, openaiKey, llmBaseUrl string
 	if enableVision {
+		defProvider, defModel, defUrl, defKey := h.useCase.GetLlmDefaults()
+		
+		llmProvider := mcp.ParseString(request, "llm_provider", defProvider)
+		
 		if llmProvider == "ollama" {
-			llmModel = mcp.ParseString(request, "ollama_model", "llama3.2-vision")
-			llmBaseUrl = mcp.ParseString(request, "ollama_url", "http://localhost:11434/v1")
+			llmModel = mcp.ParseString(request, "ollama_model", defModel)
+			llmBaseUrl = mcp.ParseString(request, "ollama_url", defUrl)
+			if llmBaseUrl == "" {
+				llmBaseUrl = "http://localhost:11434/v1"
+			}
 			openaiKey = "ollama" // Dummy key for shim
 		} else {
-			openaiKey = os.Getenv("OPENAI_API_KEY")
+			openaiKey = mcp.ParseString(request, "openai_key", defKey)
 			if openaiKey == "" {
-				return mcp.NewToolResultError("OPENAI_API_KEY environment variable is required for OpenAI vision features"), nil
+				return mcp.NewToolResultError("OpenAI API key is required but not provided or set in environment"), nil
 			}
-			llmModel = "gpt-4o" // Default model for MarkItDown vision
+			llmModel = mcp.ParseString(request, "openai_model", defModel)
+			if llmModel == "" {
+				llmModel = "gpt-4o"
+			}
+			llmBaseUrl = mcp.ParseString(request, "openai_url", defUrl)
 		}
 	}
 

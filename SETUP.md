@@ -96,4 +96,8 @@ You can configure the server using environment variables:
 | `PORT` | The port the server listens on | `9591` |
 | `ARTIFACT_GRPC_ADDR` | Address of the mlcartifact server | `localhost:9590` |
 | `PYTHON_CMD` | The command used to invoke Python | `python3` |
-| `OPENAI_API_KEY` | API Key for LLM-based image description/audio transcription | - |
+| `DEFAULT_LLM_PROVIDER` | Default provider ('openai' or 'ollama') | `openai` |
+| `DEFAULT_LLM_URL` | Base URL for the LLM API (Ollama/Custom) | - |
+| `DEFAULT_LLM_MODEL` | Default model name for vision/audio | - |
+| `DEFAULT_LLM_AUTH_KEY` | Default API key for the provider | - |
+| `OPENAI_API_KEY` | Legacy OpenAI key (used if no default set) | - |
