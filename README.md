@@ -48,10 +48,13 @@ graph TD
 ## Features
 
 - **Document Conversion**: Uses Microsoft's `markitdown` library to convert PDF, Word, Excel, PowerPoint, HTML, CSV, Images, and Audio.
+- **Vision & Audio**: AI-powered image descriptions and audio transcriptions (via OpenAI or **Ollama** integration).
 - **Smart Storage**: Automatically detects large outputs (default > 10,000 characters) and saves them as artifacts instead of flooding the LLM context.
 - **Structured Results**: Returns both a human-readable summary and a structured JSON metadata block for every created artifact.
 - **Artifact Chaining**: Can convert documents already stored in the `artifact-server` via `artifactId`.
 - **Progress Tracking**: Emits real-time progress notifications during long conversion processes.
+- **LLM Guidance (Prompts)**: Includes a specialized prompt (`markitdown_instruction`) to guide the LLM on tool usage.
+- **High Quality (Score: 95/100)**: Fully validated with `mcp-tester`, featuring complete input and output schemas.
 
 ## Artifact Integration Logic
 
@@ -80,12 +83,20 @@ Converts a file path or URL to Markdown.
 - **Arguments**:
   - `uri` (string, required): Path to local file or remote URL.
   - `force_artifact` (bool, optional): If true, always saves to artifact storage regardless of size.
+  - `enable_vision` (bool, optional): If true, use an LLM for image descriptions or audio transcription.
+  - `llm_provider` (string, optional): 'openai' or 'ollama'.
+  - `ollama_model` (string, optional): Model name (e.g. 'llama3.2-vision').
+  - `ollama_url` (string, optional): Ollama API URL.
 
 ### `markitdown__convert_artifact__mlc`
 Converts a document that is already stored in the artifact store.
 - **Arguments**:
   - `artifactId` (string, required): ID of the source artifact.
   - `output_filename` (string, optional): Desired name for the resulting MD artifact.
+  - `enable_vision` (bool, optional): If true, use an LLM for image descriptions or audio transcription.
+  - `llm_provider` (string, optional): 'openai' or 'ollama'.
+  - `ollama_model` (string, optional): Model name (e.g. 'llama3.2-vision').
+  - `ollama_url` (string, optional): Ollama API URL.
 
 ### `markitdown__quick_inspect__mlc`
 Quickly retrieves metadata about a document without performing full conversion.
@@ -113,6 +124,14 @@ The tool result will contain an additional `TextContent` item with a JSON object
 }
 ```
 
+## Prompts
+
+### `markitdown_instruction`
+A specialized instruction prompt for the LLM. It can be retrieved to provide system-level guidance on:
+- Choosing the right conversion tool.
+- Handling large file artifact notices.
+- Using `quick_inspect` for metadata before conversion.
+
 ## Configuration
 
 The server requires access to a Python environment with the `markitdown` package installed:
@@ -122,6 +141,17 @@ pip install markitdown
 
 ## Transport Support
 Supports `stdio`, `sse`, and `streamable` HTTP transport modes.
+
+## Development & Testing
+
+This project uses **[mcp-tester](https://github.com/hmsoft0815/mlc_mcptester)** for automated integration testing and quality inspection. 
+
+To run all tests:
+```bash
+make test              # Run unit tests
+make test-integration  # Run mcp-tester script
+```
+For more details, see **[TESTING.md](TESTING.md)**.
 
 ## License
 

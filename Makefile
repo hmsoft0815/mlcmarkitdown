@@ -20,6 +20,10 @@ run:
 test:
 	go test ./...
 
+test-integration: build
+	@command -v mcp-tester >/dev/null 2>&1 || (echo "mcp-tester not found, installing..." && go install github.com/hmsoft0815/mlc_mcptester/cmd/mcp-tester@latest)
+	mcp-tester test -c "bin/mlc-markitdown" --script tests/integration.mcp
+
 vet:
 	go vet ./...
 

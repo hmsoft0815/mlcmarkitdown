@@ -3,7 +3,7 @@ module github.com/hmsoft0815/mlc-markitdown
 go 1.24.2
 
 require (
-	github.com/hmsoft0815/mlcartifact v0.1.8
+	github.com/hmsoft0815/mlcartifact v0.4.0
 	github.com/mark3labs/mcp-go v0.45.0
 )
 
@@ -25,5 +25,3 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/hmsoft0815/mlcartifact => ../mlcartifact

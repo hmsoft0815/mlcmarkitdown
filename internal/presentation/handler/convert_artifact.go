@@ -4,31 +4,40 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/hmsoft0815/mlc-markitdown/internal/usecase"
-	"github.com/hmsoft0815/mlcartifact"
+	"github.com/hmsoft0815/mlcartifact/client"
 )
 
 type ConvertArtifactHandler struct {
 	useCase     *usecase.ConvertUseCase
-	artifactCli *mlcartifact.Client
+	artifactCli *client.Client
+	server      *server.MCPServer
 }
 
-func NewConvertArtifactHandler(useCase *usecase.ConvertUseCase, artifactCli *mlcartifact.Client) *ConvertArtifactHandler {
+func NewConvertArtifactHandler(useCase *usecase.ConvertUseCase, artifactCli *client.Client, srv *server.MCPServer) *ConvertArtifactHandler {
 	return &ConvertArtifactHandler{
 		useCase:     useCase,
 		artifactCli: artifactCli,
+		server:      srv,
 	}
 }
 
 func (h *ConvertArtifactHandler) GetTool() mcp.Tool {
 	return mcp.NewTool(
 		"markitdown__convert_artifact__mlc",
-		mcp.WithDescription("Converts a document already stored in the artifact storage to Markdown."),
+		mcp.WithDescription("Converts a document already stored in the artifact storage to Markdown. Supports vision if enable_vision is true."),
 		mcp.WithString("artifactId", mcp.Description("The ID of the source artifact to convert"), mcp.Required()),
 		mcp.WithString("output_filename", mcp.Description("Optional name for the resulting Markdown artifact.")),
+		mcp.WithBoolean("enable_vision", mcp.Description("If true, use an LLM for vision/audio descriptions.")),
+		mcp.WithString("llm_provider", mcp.Description("LLM provider to use: 'openai' (default) or 'ollama'")),
+		mcp.WithString("ollama_model", mcp.Description("The model to use with Ollama (e.g. 'llama3.2-vision')")),
+		mcp.WithString("ollama_url", mcp.Description("The URL of the Ollama server (default: 'http://localhost:11434/v1')")),
+		mcp.WithOutputSchema[ConvertResponse](),
 	)
 }
 
@@ -39,14 +48,46 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 	}
 
 	outputFilename := mcp.ParseString(request, "output_filename", "")
+	enableVision := mcp.ParseBoolean(request, "enable_vision", false)
+	llmProvider := mcp.ParseString(request, "llm_provider", "openai")
+	progressToken := request.Params.Meta.ProgressToken
+
+	var llmModel, openaiKey, llmBaseUrl string
+	if enableVision {
+		if llmProvider == "ollama" {
+			llmModel = mcp.ParseString(request, "ollama_model", "llama3.2-vision")
+			llmBaseUrl = mcp.ParseString(request, "ollama_url", "http://localhost:11434/v1")
+			openaiKey = "ollama" // Dummy key for shim
+		} else {
+			openaiKey = os.Getenv("OPENAI_API_KEY")
+			if openaiKey == "" {
+				return mcp.NewToolResultError("OPENAI_API_KEY environment variable is required for OpenAI vision features"), nil
+			}
+			llmModel = "gpt-4o" // Default model for MarkItDown vision
+		}
+	}
+
+	// 0. Define progress monitor
+	progress := func(percent int, status string) {
+		if progressToken != "" && h.server != nil {
+			_ = h.server.SendNotificationToClient(ctx, "notifications/progress", map[string]interface{}{
+				"progress":      float64(percent),
+				"total":         100.0,
+				"progressToken": progressToken,
+				"message":       status,
+			})
+		}
+	}
 
 	// 1. Read source artifact
+	progress(5, "Reading source artifact...")
 	res, err := h.artifactCli.Read(ctx, artifactID)
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("Failed to read source artifact", err), nil
 	}
 
 	// 2. Write to temp file for MarkItDown (since it needs a file path)
+	progress(20, "Preparing temp file...")
 	tmpFile := fmt.Sprintf("/tmp/markitdown_%s", artifactID)
 	err = h.useCase.WriteTempFile(tmpFile, res.Content)
 	if err != nil {
@@ -54,7 +95,7 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 	}
 
 	// 3. Convert
-	content, newArtifact, err := h.useCase.Convert(ctx, tmpFile, true, nil)
+	content, newArtifact, err := h.useCase.Convert(ctx, tmpFile, true, progress, llmModel, openaiKey, llmBaseUrl)
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("Conversion failed", err), nil
 	}

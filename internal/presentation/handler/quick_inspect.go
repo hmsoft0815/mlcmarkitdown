@@ -11,6 +11,13 @@ import (
 
 type QuickInspectHandler struct{}
 
+type QuickInspectResponse struct {
+	Filename     string `json:"filename" jsonschema:"description=The name of the file"`
+	Size         int64  `json:"size" jsonschema:"description=File size in bytes"`
+	Extension    string `json:"extension" jsonschema:"description=File extension"`
+	LastModified string `json:"last_modified" jsonschema:"description=Last modified timestamp"`
+}
+
 func NewQuickInspectHandler() *QuickInspectHandler {
 	return &QuickInspectHandler{}
 }
@@ -20,6 +27,7 @@ func (h *QuickInspectHandler) GetTool() mcp.Tool {
 		"markitdown__quick_inspect__mlc",
 		mcp.WithDescription("Quickly retrieves metadata about a document (file size, extension) without full conversion."),
 		mcp.WithString("uri", mcp.Description("Path to the file to inspect"), mcp.Required()),
+		mcp.WithOutputSchema[QuickInspectResponse](),
 	)
 }
 

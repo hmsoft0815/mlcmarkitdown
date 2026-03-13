@@ -10,7 +10,7 @@ import (
 
 	"github.com/hmsoft0815/mlc-markitdown/internal/presentation/handler"
 	"github.com/hmsoft0815/mlc-markitdown/internal/usecase"
-	"github.com/hmsoft0815/mlcartifact"
+	"github.com/hmsoft0815/mlcartifact/client"
 )
 
 const (
@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// 1. Initialize Artifact Client
-	artifactCli, err := mlcartifact.NewClient()
+	artifactCli, err := client.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to connect to artifact server: %v", err)
 	}
@@ -43,13 +43,15 @@ func main() {
 	mcpServer := server.NewMCPServer(name, version)
 
 	// 4. Register Tools
-	convertHandler := handler.NewConvertHandler(convertUC)
-	convertArtifactHandler := handler.NewConvertArtifactHandler(convertUC, artifactCli)
+	convertHandler := handler.NewConvertHandler(convertUC, mcpServer)
+	convertArtifactHandler := handler.NewConvertArtifactHandler(convertUC, artifactCli, mcpServer)
 	quickInspectHandler := handler.NewQuickInspectHandler()
+	promptHandler := handler.NewPromptHandler()
 
 	mcpServer.AddTool(convertHandler.GetTool(), convertHandler.Handle)
 	mcpServer.AddTool(convertArtifactHandler.GetTool(), convertArtifactHandler.Handle)
 	mcpServer.AddTool(quickInspectHandler.GetTool(), quickInspectHandler.Handle)
+	mcpServer.AddPrompt(promptHandler.GetPrompt(), promptHandler.Handle)
 
 	// 5. Start Server
 	fmt.Fprintf(os.Stderr, "MLC MarkItDown MCP Server starting (version %s)\n", version)

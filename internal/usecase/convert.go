@@ -7,25 +7,31 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/hmsoft0815/mlcartifact"
+	"github.com/hmsoft0815/mlcartifact/client"
 	pb "github.com/hmsoft0815/mlcartifact/proto"
 )
 
 type ProgressFunc func(int, string)
 
 type ConvertUseCase struct {
-	artifactCli *mlcartifact.Client
+	artifactCli *client.Client
 	threshold   int
+	pythonCmd   string
 }
 
-func NewConvertUseCase(artifactCli *mlcartifact.Client, threshold int) *ConvertUseCase {
+func NewConvertUseCase(artifactCli *client.Client, threshold int) *ConvertUseCase {
+	pythonCmd := os.Getenv("PYTHON_CMD")
+	if pythonCmd == "" {
+		pythonCmd = "python3"
+	}
 	return &ConvertUseCase{
 		artifactCli: artifactCli,
 		threshold:   threshold,
+		pythonCmd:   pythonCmd,
 	}
 }
 
-func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, progress ProgressFunc) (string, *pb.WriteResponse, error) {
+func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, progress ProgressFunc, llmModel string, openaiKey string, llmBaseUrl string) (string, *pb.WriteResponse, error) {
 	if progress != nil {
 		progress(10, "Initializing conversion engine...")
 	}
@@ -36,7 +42,18 @@ func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, p
 	}
 
 	// Assuming the shim is in the fixed location for now
-	cmd := exec.CommandContext(ctx, "python3", "internal/infrastructure/python/shim.py", uri)
+	args := []string{"internal/infrastructure/python/shim.py", uri}
+	if llmModel != "" {
+		args = append(args, "--llm-model", llmModel)
+		if openaiKey != "" {
+			args = append(args, "--openai-key", openaiKey)
+		}
+		if llmBaseUrl != "" {
+			args = append(args, "--llm-base-url", llmBaseUrl)
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, uc.pythonCmd, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", nil, fmt.Errorf("markitdown failed: %w (output: %s)", err, string(output))
@@ -61,8 +78,8 @@ func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, p
 		}
 
 		res, err := uc.artifactCli.Write(ctx, filename, []byte(content),
-			mlcartifact.WithSource("mlc-markitdown"),
-			mlcartifact.WithDescription("Auto-archived MarkItDown conversion result"))
+			client.WithSource("mlc-markitdown"),
+			client.WithDescription("Auto-archived MarkItDown conversion result"))
 		if err != nil {
 			return content, nil, fmt.Errorf("failed to auto-archive: %w", err)
 		}
