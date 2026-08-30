@@ -28,7 +28,7 @@ type ModelInfo struct {
 }
 
 type ModelListResponse struct {
-	Models []string `json:"models" jsonschema:"description=List of available model IDs"`
+	Models []string `json:"models" jsonschema:"List of available model IDs"`
 }
 
 type openAiModelsResponse struct {

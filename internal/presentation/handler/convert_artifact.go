@@ -31,9 +31,7 @@ func (h *ConvertArtifactHandler) GetTool() mcp.Tool {
 		"markitdown__convert_artifact__mlc",
 		mcp.WithDescription("Converts a document already stored in the artifact storage to Markdown. Supports vision if enable_vision is true."),
 		mcp.WithString("artifactId", mcp.Description("The ID of the source artifact to convert"), mcp.Required()),
-		// Advertised but not implemented — see the note at the result block below.
-		// The description says so rather than promising a rename that never happens.
-		mcp.WithString("output_filename", mcp.Description("Not yet implemented; the artifact keeps the name Convert gave it.")),
+		mcp.WithString("output_filename", mcp.Description("Optional name for the resulting Markdown artifact (e.g. report.md).")),
 		mcp.WithBoolean("enable_vision", mcp.Description("If true, use an LLM for vision/audio descriptions.")),
 		mcp.WithString("llm_provider", mcp.Description("LLM provider to use: 'openai' or 'ollama'")),
 		mcp.WithString("openai_key", mcp.Description("OpenAI API Key (if provider is openai)")),
@@ -51,8 +49,12 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 		return mcp.NewToolResultError("artifactId is required"), nil
 	}
 
+	outputFilename := mcp.ParseString(request, "output_filename", "")
 	enableVision := mcp.ParseBoolean(request, "enable_vision", false)
-	progressToken := request.Params.Meta.ProgressToken
+	var progressToken any
+	if request.Params.Meta != nil {
+		progressToken = request.Params.Meta.ProgressToken
+	}
 
 	var llmModel, openaiKey, llmBaseUrl string
 	if enableVision {
@@ -99,6 +101,10 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 		return mcp.NewToolResultErrorFromErr("Failed to read source artifact", err), nil
 	}
 
+	if outputFilename == "" && res.Filename != "" {
+		outputFilename = res.Filename + ".md"
+	}
+
 	// 2. Write to temp file for MarkItDown (since it needs a file path)
 	progress(20, "Preparing temp file...")
 	tmpFile := fmt.Sprintf("/tmp/markitdown_%s", artifactID)
@@ -108,7 +114,16 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 	}
 
 	// 3. Convert
-	content, newArtifact, err := h.useCase.Convert(ctx, tmpFile, true, progress, llmModel, openaiKey, llmBaseUrl)
+	req := usecase.ConvertRequest{
+		URI:            tmpFile,
+		ForceArtifact:  true,
+		OutputFilename: outputFilename,
+		Progress:       progress,
+		LlmModel:       llmModel,
+		OpenaiKey:      openaiKey,
+		LlmBaseUrl:     llmBaseUrl,
+	}
+	content, newArtifact, err := h.useCase.Convert(ctx, req)
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("Conversion failed", err), nil
 	}
@@ -119,12 +134,6 @@ func (h *ConvertArtifactHandler) Handle(ctx context.Context, request mcp.CallToo
 	}
 
 	if newArtifact != nil {
-		// output_filename is accepted by the schema and does nothing. Convert has
-		// already saved the artifact under its own name; renaming it afterwards
-		// was considered and skipped. Until 2026-08-30 this was an empty
-		// if-branch, which is why nothing ever noticed the gap — the parameter
-		// looked used. The ID in the notice below is what the caller needs.
-
 		notice := fmt.Sprintf("## Artifact Converted\n\n**Notice**: The complete file is available in the artifact server under id = %s", newArtifact.Id)
 		result.Content = append(result.Content, mcp.NewTextContent(notice))
 

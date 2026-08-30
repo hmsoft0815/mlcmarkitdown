@@ -17,16 +17,16 @@ type ConvertHandler struct {
 }
 
 type ArtifactInfo struct {
-	ID        string `json:"id" jsonschema:"description=The unique ID of the artifact"`
-	Filename  string `json:"filename" jsonschema:"description=Original filename"`
-	Source    string `json:"source" jsonschema:"description=Source system"`
-	ExpiresAt string `json:"expires_at" jsonschema:"description=Expiration timestamp"`
+	ID        string `json:"id" jsonschema:"The unique ID of the artifact"`
+	Filename  string `json:"filename" jsonschema:"Original filename"`
+	Source    string `json:"source" jsonschema:"Source system"`
+	ExpiresAt string `json:"expires_at" jsonschema:"Expiration timestamp"`
 }
 
 type ConvertResponse struct {
-	Markdown string        `json:"markdown" jsonschema:"description=The converted markdown content (full or preview)"`
-	Artifact *ArtifactInfo `json:"artifact,omitempty" jsonschema:"description=Information about the saved artifact if applicable"`
-	IsFull   bool          `json:"is_full" jsonschema:"description=True if the markdown field contains the full document"`
+	Markdown string        `json:"markdown" jsonschema:"The converted markdown content (full or preview)"`
+	Artifact *ArtifactInfo `json:"artifact,omitempty" jsonschema:"Information about the saved artifact if applicable"`
+	IsFull   bool          `json:"is_full" jsonschema:"True if the markdown field contains the full document"`
 }
 
 func NewConvertHandler(useCase *usecase.ConvertUseCase, srv *server.MCPServer) *ConvertHandler {
@@ -42,6 +42,7 @@ func (h *ConvertHandler) GetTool() mcp.Tool {
 		mcp.WithDescription("Converts a file or URL to Markdown. Smart auto-archiving is applied for large outputs. Supports vision/audio descriptions if enable_vision is true."),
 		mcp.WithString("uri", mcp.Description("The source path or URL to convert"), mcp.Required()),
 		mcp.WithBoolean("force_artifact", mcp.Description("If true, always save as artifact storage and return a notice.")),
+		mcp.WithString("output_filename", mcp.Description("Optional filename for the resulting Markdown artifact when stored.")),
 		mcp.WithBoolean("enable_vision", mcp.Description("If true, use an LLM for vision/audio descriptions.")),
 		mcp.WithString("llm_provider", mcp.Description("LLM provider to use: 'openai' or 'ollama'")),
 		mcp.WithString("openai_key", mcp.Description("OpenAI API Key (if provider is openai)")),
@@ -60,8 +61,12 @@ func (h *ConvertHandler) Handle(ctx context.Context, request mcp.CallToolRequest
 	}
 
 	forceArtifact := mcp.ParseBoolean(request, "force_artifact", false)
+	outputFilename := mcp.ParseString(request, "output_filename", "")
 	enableVision := mcp.ParseBoolean(request, "enable_vision", false)
-	progressToken := request.Params.Meta.ProgressToken
+	var progressToken any
+	if request.Params.Meta != nil {
+		progressToken = request.Params.Meta.ProgressToken
+	}
 
 	var llmModel, openaiKey, llmBaseUrl string
 	if enableVision {
@@ -102,7 +107,16 @@ func (h *ConvertHandler) Handle(ctx context.Context, request mcp.CallToolRequest
 	}
 
 	// 2. Call Usecase
-	content, artifact, err := h.useCase.Convert(ctx, uri, forceArtifact, progress, llmModel, openaiKey, llmBaseUrl)
+	req := usecase.ConvertRequest{
+		URI:            uri,
+		ForceArtifact:  forceArtifact,
+		OutputFilename: outputFilename,
+		Progress:       progress,
+		LlmModel:       llmModel,
+		OpenaiKey:      openaiKey,
+		LlmBaseUrl:     llmBaseUrl,
+	}
+	content, artifact, err := h.useCase.Convert(ctx, req)
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("Conversion failed", err), nil
 	}

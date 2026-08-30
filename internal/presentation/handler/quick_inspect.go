@@ -12,10 +12,10 @@ import (
 type QuickInspectHandler struct{}
 
 type QuickInspectResponse struct {
-	Filename     string `json:"filename" jsonschema:"description=The name of the file"`
-	Size         int64  `json:"size" jsonschema:"description=File size in bytes"`
-	Extension    string `json:"extension" jsonschema:"description=File extension"`
-	LastModified string `json:"last_modified" jsonschema:"description=Last modified timestamp"`
+	Filename     string `json:"filename" jsonschema:"The name of the file"`
+	Size         int64  `json:"size" jsonschema:"File size in bytes"`
+	Extension    string `json:"extension" jsonschema:"File extension"`
+	LastModified string `json:"last_modified" jsonschema:"Last modified timestamp"`
 }
 
 func NewQuickInspectHandler() *QuickInspectHandler {

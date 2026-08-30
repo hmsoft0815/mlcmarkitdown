@@ -84,25 +84,36 @@ func (uc *ConvertUseCase) GetLlmDefaults() (string, string, string, string) {
 	return uc.defaultProvider, uc.defaultLlmModel, uc.defaultLlmUrl, uc.defaultLlmAuthKey
 }
 
-func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, progress ProgressFunc, llmModel string, openaiKey string, llmBaseUrl string) (string, *pb.WriteResponse, error) {
-	if progress != nil {
-		progress(10, "Initializing conversion engine...")
+// ConvertRequest holds parameters for document conversion.
+type ConvertRequest struct {
+	URI            string
+	ForceArtifact  bool
+	OutputFilename string
+	Progress       ProgressFunc
+	LlmModel       string
+	OpenaiKey      string
+	LlmBaseUrl     string
+}
+
+func (uc *ConvertUseCase) Convert(ctx context.Context, req ConvertRequest) (string, *pb.WriteResponse, error) {
+	if req.Progress != nil {
+		req.Progress(10, "Initializing conversion engine...")
 	}
 
 	// 1. Call Python shim
-	if progress != nil {
-		progress(30, "Parsing document...")
+	if req.Progress != nil {
+		req.Progress(30, "Parsing document...")
 	}
 
 	// Assuming the shim is in the fixed location for now
-	args := []string{"internal/infrastructure/python/shim.py", uri}
-	if llmModel != "" {
-		args = append(args, "--llm-model", llmModel)
-		if openaiKey != "" {
-			args = append(args, "--openai-key", openaiKey)
+	args := []string{"internal/infrastructure/python/shim.py", req.URI}
+	if req.LlmModel != "" {
+		args = append(args, "--llm-model", req.LlmModel)
+		if req.OpenaiKey != "" {
+			args = append(args, "--openai-key", req.OpenaiKey)
 		}
-		if llmBaseUrl != "" {
-			args = append(args, "--llm-base-url", llmBaseUrl)
+		if req.LlmBaseUrl != "" {
+			args = append(args, "--llm-base-url", req.LlmBaseUrl)
 		}
 	}
 
@@ -113,21 +124,25 @@ func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, p
 	}
 
 	content := string(output)
-	if progress != nil {
-		progress(70, "Markdown generated.")
+	if req.Progress != nil {
+		req.Progress(70, "Markdown generated.")
 	}
 
 	// 2. Check threshold or force
-	if len(content) > uc.threshold || force {
-		if progress != nil {
-			progress(90, "Saving document to artifact storage...")
+	if len(content) > uc.threshold || req.ForceArtifact {
+		if req.Progress != nil {
+			req.Progress(90, "Saving document to artifact storage...")
 		}
 
 		filename := "converted_document.md"
-		// Try to derive filename from URI
-		parts := strings.Split(uri, "/")
-		if len(parts) > 0 {
-			filename = parts[len(parts)-1] + ".md"
+		if req.OutputFilename != "" {
+			filename = req.OutputFilename
+		} else {
+			// Try to derive filename from URI
+			parts := strings.Split(req.URI, "/")
+			if len(parts) > 0 && parts[len(parts)-1] != "" {
+				filename = parts[len(parts)-1] + ".md"
+			}
 		}
 
 		res, err := uc.artifactCli.Write(ctx, filename, []byte(content),
@@ -137,14 +152,14 @@ func (uc *ConvertUseCase) Convert(ctx context.Context, uri string, force bool, p
 			return content, nil, fmt.Errorf("failed to auto-archive: %w", err)
 		}
 
-		if progress != nil {
-			progress(100, "Done.")
+		if req.Progress != nil {
+			req.Progress(100, "Done.")
 		}
 		return content, res, nil
 	}
 
-	if progress != nil {
-		progress(100, "Done.")
+	if req.Progress != nil {
+		req.Progress(100, "Done.")
 	}
 	return content, nil, nil
 }
