@@ -66,9 +66,9 @@ func (h *ConvertHandler) Handle(ctx context.Context, request mcp.CallToolRequest
 	var llmModel, openaiKey, llmBaseUrl string
 	if enableVision {
 		defProvider, defModel, defUrl, defKey := h.useCase.GetLlmDefaults()
-		
+
 		llmProvider := mcp.ParseString(request, "llm_provider", defProvider)
-		
+
 		if llmProvider == "ollama" {
 			llmModel = mcp.ParseString(request, "ollama_model", defModel)
 			llmBaseUrl = mcp.ParseString(request, "ollama_url", defUrl)

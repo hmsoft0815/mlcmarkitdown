@@ -1,42 +1,80 @@
 version: '3'
 
-tasks:
-  build:
-    desc: Build the MLC MarkItDown server
-    cmds:
-      - go build -o bin/mlc-markitdown ./cmd/server/main.go
+# Replaces the previous Makefile, which held the same targets plus two the
+# Taskfile lacked (test:integration, test:ollama). Keeping both would have
+# meant two places to change and one of them going stale.
 
-  run:
-    desc: Run the MLC MarkItDown server
+vars:
+  BINARY: mlc-markitdown
+  BIN_DIR: bin
+  MODULE: github.com/hmsoft0815/mlcmarkitdown
+  VERSION:
+    sh: cat VERSION
+  # Without this the binary reports "dev". The old build passed no ldflags at
+  # all, so the version was a constant pretending to be configurable.
+  LDFLAGS: -X main.version={{.VERSION}}
+
+tasks:
+  default:
+    desc: List the available tasks
+    cmds: [task --list]
+    silent: true
+
+  build:
+    desc: Build the MCP server with the version stamped in
     cmds:
-      - go run ./cmd/server/main.go
+      - mkdir -p {{.BIN_DIR}}
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/server
+
+  dev:
+    desc: Run the server from source
+    cmds:
+      - go run -ldflags "{{.LDFLAGS}}" ./cmd/server {{.CLI_ARGS}}
 
   test:
-    desc: Run tests
-    cmds:
-      - go test ./...
+    desc: Run the unit tests
+    cmds: [go test ./...]
 
-  vet:
-    desc: Run go vet
+  test:integration:
+    desc: Drive the built server through mcp-tester
+    deps: [build]
     cmds:
-      - go vet ./...
+      - |
+        command -v mcp-tester >/dev/null 2>&1 || \
+          go install github.com/hmsoft0815/mlc_mcptester/cmd/mcp-tester@latest
+        mcp-tester test -c "{{.BIN_DIR}}/{{.BINARY}}" --script tests/integration.mcp
 
-  fmt:
-    desc: Format code
+  test:ollama:
+    desc: Exercise the Ollama vision/audio path against a live model
+    deps: [build]
     cmds:
-      - go fmt ./...
+      - |
+        command -v mcp-tester >/dev/null 2>&1 || \
+          go install github.com/hmsoft0815/mlc_mcptester/cmd/mcp-tester@latest
+        ./test-ollama.sh
 
   lint:
-    desc: Run golangci-lint
+    desc: gofmt check, go vet and golangci-lint
     cmds:
+      - |
+        unformatted=$(gofmt -l . | grep -v '^$' || true)
+        if [ -n "$unformatted" ]; then
+          echo "gofmt would change:"; echo "$unformatted"; exit 1
+        fi
+        echo "gofmt: clean"
+      - go vet ./...
       - golangci-lint run
 
-  docker-build:
-    desc: Build Docker image
+  fmt:
+    desc: Format the source
+    cmds: [go fmt ./...]
+
+  docker:build:
+    desc: Build the Docker image
     cmds:
-      - docker build -t mlc-markitdown .
+      - docker build -t {{.BINARY}} .
 
   clean:
-    desc: Remove built binaries
+    desc: Remove build output
     cmds:
-      - rm -rf bin/
+      - rm -rf {{.BIN_DIR}}

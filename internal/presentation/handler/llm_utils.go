@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/hmsoft0815/mlc-markitdown/internal/usecase"
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 type LlmUtilsHandler struct {
@@ -53,10 +53,10 @@ func (h *LlmUtilsHandler) Handle(ctx context.Context, request mcp.CallToolReques
 		// Try to fallback to OpenAI default if nothing else
 		baseUrl = "https://api.openai.com/v1"
 	}
-	
+
 	// Ensure no trailing slash
 	baseUrl = strings.TrimSuffix(baseUrl, "/")
-	
+
 	apiKey := mcp.ParseString(request, "api_key", defKey)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", baseUrl+"/models", nil)
@@ -72,7 +72,9 @@ func (h *LlmUtilsHandler) Handle(ctx context.Context, request mcp.CallToolReques
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("Failed to connect to LLM provider", err), nil
 	}
-	defer resp.Body.Close()
+	// Explicitly ignored: the request is done by the time this runs, and there
+	// is no caller left to tell.
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return mcp.NewToolResultError(fmt.Sprintf("LLM provider returned status %d", resp.StatusCode)), nil
