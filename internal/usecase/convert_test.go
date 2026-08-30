@@ -5,7 +5,7 @@ import (
 )
 
 func TestNewConvertUseCase(t *testing.T) {
-	uc := NewConvertUseCase(nil, 1000)
+	uc := NewConvertUseCase(nil, 1000, LlmConfig{})
 	if uc == nil {
 		t.Fatal("Expected NewConvertUseCase to return a non-nil object")
 	}

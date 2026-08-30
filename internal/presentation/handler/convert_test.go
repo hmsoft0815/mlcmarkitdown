@@ -7,16 +7,16 @@ import (
 )
 
 func TestNewConvertHandler(t *testing.T) {
-	uc := usecase.NewConvertUseCase(nil, 1000)
-	h := NewConvertHandler(uc)
+	uc := usecase.NewConvertUseCase(nil, 1000, usecase.LlmConfig{})
+	h := NewConvertHandler(uc, nil)
 	if h == nil {
 		t.Fatal("Expected NewConvertHandler to return a non-nil object")
 	}
 }
 
 func TestConvertHandler_GetTool(t *testing.T) {
-	uc := usecase.NewConvertUseCase(nil, 1000)
-	h := NewConvertHandler(uc)
+	uc := usecase.NewConvertUseCase(nil, 1000, usecase.LlmConfig{})
+	h := NewConvertHandler(uc, nil)
 	tool := h.GetTool()
 
 	if tool.Name != "markitdown__convert__mlc" {

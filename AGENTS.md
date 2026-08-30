@@ -5,7 +5,7 @@ Structured documentation lives in `.mlcai/`, maintained through the
 `mlc-dochub` MCP server.
 
 - **Project ID:** `mlc-markitdown` — MLC MarkItDown MCP Server
-- **Source directory:** `/mnt/data2tb/mlc_allmcp/mlc-markitdown` (read source files with native Read —
+- **Source directory:** `/mnt/data2tb/mlc-markitdown` (read source files with native Read —
   the MCP tools only touch `.mlcai/`)
 
 ### Existing docs
