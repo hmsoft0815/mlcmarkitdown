@@ -1,0 +1,12 @@
+# Vision and Model Listing Test Script using CLI Defaults
+
+# 1. List models using the default URL (passed via CLI flag)
+call_tool markitdown__list_models__mlc
+assert_contains "llama"
+
+# 2. Convert a remote image using default LLM settings (passed via CLI flags)
+# We don't specify provider, url or model here to test if defaults work
+call_tool markitdown__convert__mlc uri:"https://avatars.githubusercontent.com/u/1?v=4" enable_vision:true
+
+# 3. Check if we got a description
+assert_contains "Description"

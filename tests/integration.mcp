@@ -1,0 +1,15 @@
+# Comprehensive Integration Test Script for mlc-markitdown
+# This script is executed via mcp-tester (v0.2.0+)
+
+# 1. Test basic file conversion
+# Use the named argument 'uri' to point to our test file.
+call_tool markitdown__convert__mlc uri:test.txt
+# Verify the output contains the expected content
+assert_contains "Hello MarkItDown"
+
+# 2. Test quick inspection tool
+# This tool only returns metadata, not the full markdown.
+call_tool markitdown__quick_inspect__mlc uri:test.txt
+# Verify it correctly identifies the extension
+assert_contains ".txt"
+assert_contains "Size"

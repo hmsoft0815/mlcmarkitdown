@@ -65,8 +65,10 @@ python3 -m venv venv
 # Activate it
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install the markitdown library
-pip install markitdown
+# Install the markitdown library with optional features
+pip install "markitdown[all]"
+# For vision/audio features, also install the openai package
+pip install openai
 ```
 
 ### 3. Build and Run the Go Server
@@ -79,6 +81,7 @@ pip install markitdown
 2. **Run**:
    Ensure your virtual environment is active so the Go server can find the `python3` command with `markitdown` installed.
    ```bash
+   export OPENAI_API_KEY="sk-..." # Required for vision/audio
    ./mlc-markitdown
    ```
 
@@ -93,3 +96,8 @@ You can configure the server using environment variables:
 | `PORT` | The port the server listens on | `9591` |
 | `ARTIFACT_GRPC_ADDR` | Address of the mlcartifact server | `localhost:9590` |
 | `PYTHON_CMD` | The command used to invoke Python | `python3` |
+| `DEFAULT_LLM_PROVIDER` | Default provider ('openai' or 'ollama') | `openai` |
+| `DEFAULT_LLM_URL` | Base URL for the LLM API (Ollama/Custom) | - |
+| `DEFAULT_LLM_MODEL` | Default model name for vision/audio | - |
+| `DEFAULT_LLM_AUTH_KEY` | Default API key for the provider | - |
+| `OPENAI_API_KEY` | Legacy OpenAI key (used if no default set) | - |
