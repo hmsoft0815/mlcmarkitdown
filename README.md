@@ -165,6 +165,14 @@ make test-integration  # Run mcp-tester script
 ```
 For more details, see **[TESTING.md](TESTING.md)**.
 
+## Reference
+
+The **[MCP Handbook](https://mlcgo.eu/books/mcp-handbuch/)** explains the Model Context Protocol from the ground
+up — tools, resources, prompts, transports, security and the artifact pattern.
+Available in English and German.
+
+---
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
