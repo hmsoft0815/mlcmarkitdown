@@ -2,6 +2,8 @@ module github.com/hmsoft0815/mlc-markitdown
 
 go 1.25.5
 
+toolchain go1.25.13
+
 require (
 	github.com/hmsoft0815/mlcartifact v0.4.3
 	github.com/mark3labs/mcp-go v0.58.0
