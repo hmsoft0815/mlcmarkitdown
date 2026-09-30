@@ -17,3 +17,6 @@ vendor/
 .vscode/
 .idea/
 .cache/
+
+# lokale MCP-Konfiguration (dochub-cli agent-rules)
+.mcp.json
